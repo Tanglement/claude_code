@@ -1,0 +1,1698 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>股票信息系统</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- ECharts -->
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #1a73e8;
+            --bg-color: #f5f5f5;
+            --card-bg: #ffffff;
+            --text-primary: #333333;
+            --text-secondary: #666666;
+            --up-color: #e74c3c;
+            --down-color: #27ae60;
+            --border-color: #e0e0e0;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            color: var(--text-primary);
+        }
+
+        /* 登录页面样式 */
+        .login-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .login-card {
+            width: 100%;
+            max-width: 400px;
+            padding: 40px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+
+        .login-logo {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .login-logo i {
+            font-size: 48px;
+            color: var(--primary-color);
+        }
+
+        .login-logo h3 {
+            margin-top: 10px;
+            color: var(--text-primary);
+        }
+
+        /* 导航栏 */
+        .navbar {
+            background: white;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        .navbar-brand {
+            color: var(--primary-color) !important;
+            font-weight: 600;
+        }
+
+        .nav-link {
+            color: var(--text-secondary) !important;
+        }
+
+        .nav-link:hover, .nav-link.active {
+            color: var(--primary-color) !important;
+        }
+
+        /* 侧边栏 */
+        .sidebar {
+            background: white;
+            min-height: calc(100vh - 56px);
+            border-right: 1px solid var(--border-color);
+            padding: 20px 0;
+        }
+
+        .sidebar .nav-link {
+            padding: 12px 24px;
+            border-left: 3px solid transparent;
+        }
+
+        .sidebar .nav-link:hover, .sidebar .nav-link.active {
+            background: #f8f9fa;
+            border-left-color: var(--primary-color);
+        }
+
+        /* 卡片样式 */
+        .stat-card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            transition: transform 0.2s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+        }
+
+        .stat-card h3 {
+            font-size: 28px;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .stat-card p {
+            color: var(--text-secondary);
+            margin: 5px 0 0 0;
+            font-size: 14px;
+        }
+
+        /* 股票表格 */
+        .stock-table {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .stock-table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            border: none;
+            padding: 14px 16px;
+        }
+
+        .stock-table td {
+            padding: 12px 16px;
+            vertical-align: middle;
+            border-color: var(--border-color);
+        }
+
+        .stock-table tr:hover {
+            background: #f8f9fa;
+        }
+
+        .price-up {
+            color: var(--up-color);
+        }
+
+        .price-down {
+            color: var(--down-color);
+        }
+
+        .stock-code {
+            color: var(--primary-color);
+            font-weight: 500;
+        }
+
+        /* 按钮样式 */
+        .btn-primary {
+            background: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+
+        .btn-primary:hover {
+            background: #1557b0;
+            border-color: #1557b0;
+        }
+
+        .btn-outline-primary {
+            color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+
+        .btn-outline-primary:hover {
+            background: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+
+        /* K线图容器 */
+        #kline-chart {
+            width: 100%;
+            height: 400px;
+            background: white;
+            border-radius: 12px;
+        }
+
+        /* 内容区域 */
+        .main-content {
+            padding: 24px;
+        }
+
+        .page-header {
+            margin-bottom: 24px;
+        }
+
+        .page-title {
+            font-size: 24px;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        /* 自选股卡片 */
+        .watchlist-card {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .watchlist-info {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .watchlist-price {
+            text-align: right;
+        }
+
+        /* 表单样式 */
+        .form-control:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.2rem rgba(26, 115, 232, 0.15);
+        }
+
+        /* 加载动画 */
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 40px;
+        }
+
+        .spinner-border {
+            color: var(--primary-color);
+        }
+
+        /* 提示消息 */
+        .toast-container {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            z-index: 9999;
+        }
+
+        /* 设置页面 */
+        .settings-section {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 20px;
+        }
+
+        .settings-section h5 {
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        /* 智能体团队卡片 */
+        .agent-team-card {
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .agent-team-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+
+        .agent-team-card .card-header {
+            border-radius: 0;
+        }
+
+        /* 响应式 */
+        @media (max-width: 768px) {
+            .sidebar {
+                display: none;
+            }
+
+            .main-content {
+                padding: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Toast 提示容器 -->
+    <div class="toast-container"></div>
+
+    <!-- 登录页面 -->
+    <div id="login-page" class="login-container" style="display: none;">
+        <div class="login-card">
+            <div class="login-logo">
+                <i class="bi bi-graph-up-arrow"></i>
+                <h3>股票信息系统</h3>
+            </div>
+            <form id="login-form">
+                <div class="mb-3">
+                    <label class="form-label">用户名</label>
+                    <input type="text" class="form-control" id="login-username" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">密码</label>
+                    <input type="password" class="form-control" id="login-password" required>
+                </div>
+                <button type="submit" class="btn btn-primary w-100">登 录</button>
+            </form>
+            <div class="text-center mt-3">
+                <a href="#" onclick="showRegister(); return false;">没有账号？去注册</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- 注册页面 -->
+    <div id="register-page" class="login-container" style="display: none;">
+        <div class="login-card">
+            <div class="login-logo">
+                <i class="bi bi-graph-up-arrow"></i>
+                <h3>注册账号</h3>
+            </div>
+            <form id="register-form">
+                <div class="mb-3">
+                    <label class="form-label">用户名</label>
+                    <input type="text" class="form-control" id="register-username" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">邮箱</label>
+                    <input type="email" class="form-control" id="register-email">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">密码</label>
+                    <input type="password" class="form-control" id="register-password" required>
+                </div>
+                <button type="submit" class="btn btn-primary w-100">注 册</button>
+            </form>
+            <div class="text-center mt-3">
+                <a href="#" onclick="showLogin(); return false;">已有账号？去登录</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- 主应用 (登录后显示) -->
+    <div id="main-app" style="display: none;">
+        <!-- 导航栏 -->
+        <nav class="navbar navbar-expand-lg navbar-light">
+            <div class="container-fluid">
+                <a class="navbar-brand" href="#">
+                    <i class="bi bi-graph-up-arrow"></i> 股票信息系统
+                </a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <ul class="navbar-nav me-auto">
+                        <li class="nav-item">
+                            <a class="nav-link active" href="#" onclick="showPage('dashboard'); return false;">
+                                <i class="bi bi-house"></i> 首页
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#" onclick="showPage('stocks'); return false;">
+                                <i class="bi bi-currency-stock"></i> 行情
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#" onclick="showPage('hot'); return false;">
+                                <i class="bi bi-fire"></i> 热门
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#" onclick="showPage('watchlist'); return false;">
+                                <i class="bi bi-star"></i> 自选股
+                            </a>
+                        </li>
+                    </ul>
+                    <ul class="navbar-nav">
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="userDropdown" data-bs-toggle="dropdown">
+                                <i class="bi bi-person-circle"></i> <span id="current-username">用户</span>
+                            </a>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="#" onclick="showPage('settings'); return false;">
+                                    <i class="bi bi-gear"></i> 设置
+                                </a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="#" onclick="logout(); return false;">
+                                    <i class="bi bi-box-arrow-right"></i> 退出登录
+                                </a></li>
+                            </ul>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+
+        <div class="container-fluid">
+            <div class="row">
+                <!-- 侧边栏 -->
+                <nav class="col-md-2 d-none d-md-block sidebar">
+                    <div class="position-sticky">
+                        <ul class="nav flex-column">
+                            <li class="nav-item">
+                                <a class="nav-link" href="#" onclick="showPage('dashboard'); return false;">
+                                    <i class="bi bi-house me-2"></i> 首页
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="#" onclick="showPage('stocks'); return false;">
+                                    <i class="bi bi-currency-stock me-2"></i> 行情列表
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="#" onclick="showPage('hot'); return false;">
+                                    <i class="bi bi-fire me-2"></i> 热门股票
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="#" onclick="showPage('watchlist'); return false;">
+                                    <i class="bi bi-star me-2"></i> 自选股
+                                </a>
+                            </li>
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" id="agentDropdown" data-bs-toggle="dropdown">
+                                    <i class="bi bi-robot me-2"></i> 智能体分析
+                                </a>
+                                <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item" href="#" onclick="showPage('agent-teams'); return false;">
+                                        <i class="bi bi-collection me-2"></i> 团队概览
+                                    </a></li>
+                                    <li><a class="dropdown-item" href="#" onclick="showPage('agent-list'); return false;">
+                                        <i class="bi bi-list-ul me-2"></i> 智能体列表
+                                    </a></li>
+                                </ul>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="#" onclick="showPage('settings'); return false;">
+                                    <i class="bi bi-gear me-2"></i> 个人设置
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </nav>
+
+                <!-- 主内容区 -->
+                <main class="col-md-10 ms-sm-auto main-content">
+                    <!-- 首页 -->
+                    <div id="page-dashboard">
+                        <div class="page-header d-flex justify-content-between align-items-center">
+                            <h4 class="page-title">欢迎回来，<span id="welcome-username">用户</span></h4>
+                        </div>
+
+                        <!-- 统计卡片 -->
+                        <div class="row mb-4">
+                            <div class="col-md-3">
+                                <div class="stat-card">
+                                    <h3 id="stat-watchlist-count">0</h3>
+                                    <p>自选股数量</p>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="stat-card">
+                                    <h3 id="stat-up-count" class="price-up">0</h3>
+                                    <p>今日上涨</p>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="stat-card">
+                                    <h3 id="stat-down-count" class="price-down">0</h3>
+                                    <p>今日下跌</p>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="stat-card">
+                                    <h3 id="stat-alert-count">0</h3>
+                                    <p>预警提醒</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 我的自选股 -->
+                        <div class="card">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0">我的自选股</h5>
+                                <button class="btn btn-sm btn-primary" onclick="showPage('watchlist');">
+                                    <i class="bi bi-plus"></i> 添加自选
+                                </button>
+                            </div>
+                            <div class="card-body">
+                                <div id="dashboard-watchlist" class="loading">
+                                    <div class="spinner-border" role="status"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 股票列表页 -->
+                    <div id="page-stocks" style="display: none;">
+                        <div class="page-header d-flex justify-content-between align-items-center">
+                            <h4 class="page-title">股票行情</h4>
+                            <div class="d-flex gap-2">
+                                <input type="text" class="form-control" placeholder="搜索股票代码或名称" id="stock-search" style="width: 200px;">
+                                <button class="btn btn-primary" onclick="searchStocks()">
+                                    <i class="bi bi-search"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div class="card-body">
+                                <div id="stocks-table" class="loading">
+                                    <div class="spinner-border" role="status"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 热门股票页 -->
+                    <div id="page-hot" style="display: none;">
+                        <div class="page-header">
+                            <h4 class="page-title">热门股票</h4>
+                        </div>
+                        <div class="card">
+                            <div class="card-body">
+                                <div id="hot-table" class="loading">
+                                    <div class="spinner-border" role="status"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 股票详情页 -->
+                    <div id="page-stock-detail" style="display: none;">
+                        <div class="page-header">
+                            <a href="#" onclick="showPage('stocks'); return false;" class="text-decoration-none">
+                                <i class="bi bi-arrow-left"></i> 返回
+                            </a>
+                            <h4 class="page-title mt-2">
+                                <span id="detail-symbol"></span>
+                                <span id="detail-name" class="ms-2"></span>
+                            </h4>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-8">
+                                <div id="kline-chart"></div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card mb-3">
+                                    <div class="card-header">
+                                        <h6 class="mb-0">实时行情</h6>
+                                    </div>
+                                    <div class="card-body" id="detail-quote">
+                                        <div class="loading"><div class="spinner-border" role="status"></div></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card mt-3">
+                            <div class="card-header">
+                                <ul class="nav nav-tabs card-header-tabs" id="detail-tabs">
+                                    <li class="nav-item">
+                                        <a class="nav-link active" href="#" onclick="showDetailTab('news'); return false;">新闻资讯</a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a class="nav-link" href="#" onclick="showDetailTab('announcements'); return false;">公司公告</a>
+                                    </li>
+                                </ul>
+                            </div>
+                            <div class="card-body">
+                                <div id="detail-content">
+                                    <div class="loading"><div class="spinner-border" role="status"></div></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 自选股页 -->
+                    <div id="page-watchlist" style="display: none;">
+                        <div class="page-header d-flex justify-content-between align-items-center">
+                            <h4 class="page-title">自选股管理</h4>
+                            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addWatchlistModal">
+                                <i class="bi bi-plus"></i> 添加自选股
+                            </button>
+                        </div>
+                        <div class="card">
+                            <div class="card-body">
+                                <div id="watchlist-table" class="loading">
+                                    <div class="spinner-border" role="status"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 设置页 -->
+                    <div id="page-settings" style="display: none;">
+                        <div class="page-header">
+                            <h4 class="page-title">个人设置</h4>
+                        </div>
+                        <div class="settings-section">
+                            <h5><i class="bi bi-bell"></i> 推送设置</h5>
+                            <form id="preference-form">
+                                <div class="mb-3">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="push-enabled">
+                                        <label class="form-check-label" for="push-enabled">启用推送通知</label>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">推送时间</label>
+                                    <input type="time" class="form-control" id="push-time" value="09:30">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">推送日期</label>
+                                    <div>
+                                        <div class="form-check form-check-inline">
+                                            <input class="form-check-input" type="checkbox" id="day-1" value="1">
+                                            <label class="form-check-label" for="day-1">周一</label>
+                                        </div>
+                                        <div class="form-check form-check-inline">
+                                            <input class="form-check-input" type="checkbox" id="day-2" value="2">
+                                            <label class="form-check-label" for="day-2">周二</label>
+                                        </div>
+                                        <div class="form-check form-check-inline">
+                                            <input class="form-check-input" type="checkbox" id="day-3" value="3">
+                                            <label class="form-check-label" for="day-3">周三</label>
+                                        </div>
+                                        <div class="form-check form-check-inline">
+                                            <input class="form-check-input" type="checkbox" id="day-4" value="4">
+                                            <label class="form-check-label" for="day-4">周四</label>
+                                        </div>
+                                        <div class="form-check form-check-inline">
+                                            <input class="form-check-input" type="checkbox" id="day-5" value="5">
+                                            <label class="form-check-label" for="day-5">周五</label>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">预警类型</label>
+                                    <div>
+                                        <div class="form-check form-check-inline">
+                                            <input class="form-check-input" type="checkbox" id="price-alert" checked>
+                                            <label class="form-check-label" for="price-alert">价格预警</label>
+                                        </div>
+                                        <div class="form-check form-check-inline">
+                                            <input class="form-check-input" type="checkbox" id="news-alert" checked>
+                                            <label class="form-check-label" for="news-alert">新闻预警</label>
+                                        </div>
+                                        <div class="form-check form-check-inline">
+                                            <input class="form-check-input" type="checkbox" id="announcement-alert" checked>
+                                            <label class="form-check-label" for="announcement-alert">公告预警</label>
+                                        </div>
+                                    </div>
+                                </div>
+                                <button type="submit" class="btn btn-primary">保存设置</button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- 智能体团队概览页 -->
+                    <div id="page-agent-teams" style="display: none;">
+                        <div class="page-header">
+                            <h4 class="page-title">智能体团队概览</h4>
+                        </div>
+                        <div class="row" id="agent-teams-container">
+                            <div class="loading"><div class="spinner-border" role="status"></div></div>
+                        </div>
+                    </div>
+
+                    <!-- 智能体列表页 -->
+                    <div id="page-agent-list" style="display: none;">
+                        <div class="page-header d-flex justify-content-between align-items-center">
+                            <h4 class="page-title">智能体列表</h4>
+                            <select class="form-select" id="team-select" style="width: 200px;" onchange="loadTeamAgents()">
+                                <option value="">选择团队...</option>
+                                <option value="industry_team">行业分析团队</option>
+                                <option value="allocation_team">资产配置团队</option>
+                                <option value="risk_team">风控团队</option>
+                                <option value="stock_selection_team">个股精选团队</option>
+                                <option value="execution_team">交易执行团队</option>
+                                <option value="decision">最终决策团队</option>
+                            </select>
+                        </div>
+                        <div class="card">
+                            <div class="card-body">
+                                <div id="agent-list-container">
+                                    <p class="text-muted text-center">请选择一个团队查看智能体列表</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 智能体提示词编辑页 (模态框) -->
+                    <div class="modal fade" id="agentPromptModal" tabindex="-1">
+                        <div class="modal-dialog modal-xl">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="agent-prompt-title">智能体提示词</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <div class="mb-3">
+                                        <label class="form-label">智能体描述</label>
+                                        <input type="text" class="form-control" id="agent-description" readonly>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">提示词内容</label>
+                                        <textarea class="form-control" id="agent-prompt-text" rows="15" style="font-family: monospace;"></textarea>
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                                    <button type="button" class="btn btn-primary" onclick="saveAgentPrompt()">保存提示词</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </main>
+            </div>
+        </div>
+    </div>
+
+    <!-- 添加自选股 Modal -->
+    <div class="modal fade" id="addWatchlistModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">添加自选股</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="add-watchlist-form">
+                        <div class="mb-3">
+                            <label class="form-label">搜索股票</label>
+                            <input type="text" class="form-control" id="stock-search-input"
+                                   placeholder="输入股票代码或名称搜索..." autocomplete="off"
+                                   oninput="searchStocksForAdd(this.value)">
+                            <div id="search-results" class="list-group mt-1" style="max-height: 200px; overflow-y: auto; display: none;"></div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">股票代码</label>
+                            <input type="text" class="form-control" id="add-symbol" placeholder="选择股票后自动填充" readonly required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">股票名称</label>
+                            <input type="text" class="form-control" id="add-stock-name" placeholder="选择股票后自动填充" readonly>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">备注</label>
+                            <textarea class="form-control" id="add-notes" rows="2" placeholder="可选"></textarea>
+                        </div>
+                        <div class="row">
+                            <div class="col-6">
+                                <label class="form-label">预警价格</label>
+                                <input type="number" step="0.01" class="form-control" id="add-alert-price" placeholder="可选">
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label">预警涨跌幅(%)</label>
+                                <input type="number" step="0.1" class="form-control" id="add-alert-pct" placeholder="可选">
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" onclick="addToWatchlist()">添加</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap 5 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // 全局变量
+        const API_BASE = '/api/v1';
+        let currentUser = null;
+        let currentPage = 'dashboard';
+        let currentStockSymbol = null;
+        let klineChart = null;
+
+        // ============ 页面显示控制 ============
+        function showLogin() {
+            document.getElementById('login-page').style.display = 'flex';
+            document.getElementById('register-page').style.display = 'none';
+            document.getElementById('main-app').style.display = 'none';
+        }
+
+        function showRegister() {
+            document.getElementById('login-page').style.display = 'none';
+            document.getElementById('register-page').style.display = 'flex';
+            document.getElementById('main-app').style.display = 'none';
+        }
+
+        function showMainApp() {
+            document.getElementById('login-page').style.display = 'none';
+            document.getElementById('register-page').style.display = 'none';
+            document.getElementById('main-app').style.display = 'block';
+        }
+
+        function showPage(page) {
+            // 隐藏所有页面
+            document.querySelectorAll('[id^="page-"]').forEach(el => el.style.display = 'none');
+
+            // 显示目标页面
+            document.getElementById('page-' + page).style.display = 'block';
+            currentPage = page;
+
+            // 更新导航状态
+            document.querySelectorAll('.nav-link').forEach(el => el.classList.remove('active'));
+            event.target.classList.add('active');
+
+            // 加载页面数据
+            switch(page) {
+                case 'dashboard':
+                    loadDashboard();
+                    break;
+                case 'stocks':
+                    loadStocks();
+                    break;
+                case 'hot':
+                    loadHotStocks();
+                    break;
+                case 'watchlist':
+                    loadWatchlist();
+                    break;
+                case 'agent-teams':
+                    loadAgentTeams();
+                    break;
+                case 'agent-list':
+                    loadTeamAgents();
+                    break;
+                case 'settings':
+                    loadPreference();
+                    break;
+            }
+        }
+
+        // ============ 认证相关 ============
+        function checkAuth() {
+            const userId = localStorage.getItem('user_id');
+            const username = localStorage.getItem('username');
+            if (userId && username) {
+                currentUser = { id: userId, username: username };
+                document.getElementById('current-username').textContent = username;
+                document.getElementById('welcome-username').textContent = username;
+                showMainApp();
+                loadDashboard();
+            } else {
+                showLogin();
+            }
+        }
+
+        function login(username, password) {
+            fetch(API_BASE + '/user/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.code === 200) {
+                    currentUser = {
+                        id: data.data.user.id,
+                        username: data.data.user.username
+                    };
+                    localStorage.setItem('user_id', data.data.user.id);
+                    localStorage.setItem('username', data.data.user.username);
+                    localStorage.setItem('token', data.data.token);
+                    showMainApp();
+                    loadDashboard();
+                    showToast('登录成功', 'success');
+                } else {
+                    showToast(data.message || '登录失败', 'danger');
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                showToast('登录失败，请检查网络', 'danger');
+            });
+        }
+
+        function register(username, password, email) {
+            fetch(API_BASE + '/user/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password, email })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.code === 201) {
+                    showToast('注册成功，请登录', 'success');
+                    showLogin();
+                } else {
+                    showToast(data.message || '注册失败', 'danger');
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                showToast('注册失败，请检查网络', 'danger');
+            });
+        }
+
+        function logout() {
+            localStorage.removeItem('user_id');
+            localStorage.removeItem('username');
+            localStorage.removeItem('token');
+            currentUser = null;
+            showLogin();
+            showToast('已退出登录', 'info');
+        }
+
+        // ============ 登录表单处理 ============
+        document.getElementById('login-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const username = document.getElementById('login-username').value;
+            const password = document.getElementById('login-password').value;
+            login(username, password);
+        });
+
+        document.getElementById('register-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const username = document.getElementById('register-username').value;
+            const password = document.getElementById('register-password').value;
+            const email = document.getElementById('register-email').value;
+            register(username, password, email);
+        });
+
+        // ============ 首页 ============
+        function loadDashboard() {
+            loadWatchlistData();
+            loadHotStocksMini();
+        }
+
+        function loadWatchlistData() {
+            fetch(API_BASE + '/user/watchlist', {
+                headers: { 'X-User-Id': localStorage.getItem('user_id') }
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.code === 200) {
+                    renderDashboardWatchlist(data.data);
+                    document.getElementById('stat-watchlist-count').textContent = data.data.length;
+                }
+            })
+            .catch(console.error);
+        }
+
+        function renderDashboardWatchlist(watchlist) {
+            const container = document.getElementById('dashboard-watchlist');
+            if (!watchlist || watchlist.length === 0) {
+                container.innerHTML = '<p class="text-muted text-center">暂无自选股</p>';
+                return;
+            }
+
+            const symbols = watchlist.map(w => w.symbol);
+            fetch(API_BASE + '/stock/hot?limit=50')
+            .then(res => res.json())
+            .then(data => {
+                let html = '<div class="table-responsive"><table class="table table-hover mb-0">';
+                html += '<thead><tr><th>代码</th><th>名称</th><th>最新价</th><th>涨跌幅</th><th>操作</th></tr></thead><tbody>';
+
+                watchlist.forEach(item => {
+                    // 尝试从热门股票数据中获取价格
+                    const stockData = data.data ? data.data.find(s => s.item && s.item.includes(item.symbol)) : null;
+                    const price = stockData ? stockData.value : '--';
+                    const change = '--';
+
+                    html += `<tr>
+                        <td><a href="#" class="stock-code" onclick="showStockDetail('${item.symbol}'); return false;">${item.symbol}</a></td>
+                        <td>${item.stock_name || '--'}</td>
+                        <td>${price}</td>
+                        <td class="${parseFloat(change) > 0 ? 'price-up' : parseFloat(change) < 0 ? 'price-down' : ''}">${change}</td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-danger" onclick="deleteWatchlist('${item.symbol}')">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </td>
+                    </tr>`;
+                });
+                html += '</tbody></table></div>';
+                container.innerHTML = html;
+
+                // 更新统计
+                document.getElementById('stat-up-count').textContent = '0';
+                document.getElementById('stat-down-count').textContent = '0';
+                document.getElementById('stat-alert-count').textContent = '0';
+            })
+            .catch(err => {
+                container.innerHTML = '<p class="text-muted text-center">暂无数据</p>';
+            });
+        }
+
+        function loadHotStocksMini() {
+            // 简化版本，不重复加载
+        }
+
+        // ============ 股票列表 ============
+        function loadStocks() {
+            const container = document.getElementById('stocks-table');
+            container.innerHTML = '<div class="loading"><div class="spinner-border" role="status"></div></div>';
+
+            fetch(API_BASE + '/stock/hot?limit=50')
+            .then(res => res.json())
+            .then(data => {
+                if (data.code === 200 && data.data && data.data.length > 0) {
+                    renderStocksTable(data.data);
+                } else {
+                    container.innerHTML = '<p class="text-muted text-center">暂无数据</p>';
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                container.innerHTML = '<p class="text-danger text-center">加载失败</p>';
+            });
+        }
+
+        function renderStocksTable(stocks) {
+            const container = document.getElementById('stocks-table');
+            let html = '<div class="table-responsive"><table class="table table-hover stock-table">';
+            html += '<thead><tr><th>代码</th><th>名称</th><th>数值</th><th>操作</th></tr></thead><tbody>';
+
+            stocks.forEach(stock => {
+                html += `<tr>
+                    <td>${stock.item || '--'}</td>
+                    <td>${stock.value || '--'}</td>
+                    <td>--</td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary" onclick="addWatchlistQuick('${stock.item}')">
+                            <i class="bi bi-star"></i> 加自选
+                        </button>
+                        <a href="#" class="btn btn-sm btn-outline-secondary" onclick="showStockDetail('${stock.item}'); return false;">
+                            详情
+                        </a>
+                    </td>
+                </tr>`;
+            });
+            html += '</tbody></table></div>';
+            container.innerHTML = html;
+        }
+
+        function searchStocks() {
+            const keyword = document.getElementById('stock-search').value.toLowerCase();
+            const rows = document.querySelectorAll('#stocks-table tbody tr');
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(keyword) ? '' : 'none';
+            });
+        }
+
+        // ============ 热门股票 ============
+        function loadHotStocks() {
+            const container = document.getElementById('hot-table');
+            container.innerHTML = '<div class="loading"><div class="spinner-border" role="status"></div></div>';
+
+            fetch(API_BASE + '/stock/hot?limit=20')
+            .then(res => res.json())
+            .then(data => {
+                if (data.code === 200 && data.data) {
+                    renderHotTable(data.data);
+                } else {
+                    container.innerHTML = '<p class="text-muted text-center">暂无数据</p>';
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                container.innerHTML = '<p class="text-danger text-center">加载失败</p>';
+            });
+        }
+
+        function renderHotTable(stocks) {
+            const container = document.getElementById('hot-table');
+            let html = '<div class="table-responsive"><table class="table stock-table">';
+            html += '<thead><tr><th>排名</th><th>代码</th><th>数值</th><th>操作</th></tr></thead><tbody>';
+
+            stocks.forEach((stock, index) => {
+                html += `<tr>
+                    <td><span class="badge bg-primary">${index + 1}</span></td>
+                    <td class="stock-code">${stock.item || '--'}</td>
+                    <td>${stock.value || '--'}</td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary" onclick="addWatchlistQuick('${stock.item}')">
+                            <i class="bi bi-star"></i>
+                        </button>
+                    </td>
+                </tr>`;
+            });
+            html += '</tbody></table></div>';
+            container.innerHTML = html;
+        }
+
+        // ============ 股票详情 ============
+        function showStockDetail(symbol) {
+            currentStockSymbol = symbol;
+            document.getElementById('page-stock-detail').style.display = 'block';
+            document.querySelectorAll('[id^="page-"]').forEach(el => {
+                if (el.id !== 'page-stock-detail') el.style.display = 'none';
+            });
+
+            document.getElementById('detail-symbol').textContent = symbol;
+            document.getElementById('detail-name').textContent = '';
+
+            // 加载K线图
+            initKlineChart(symbol);
+
+            // 加载实时行情
+            loadStockQuote(symbol);
+
+            // 加载新闻
+            showDetailTab('news');
+        }
+
+        function showDetailTab(tab) {
+            document.querySelectorAll('#detail-tabs .nav-link').forEach(el => el.classList.remove('active'));
+            event.target.classList.add('active');
+
+            if (tab === 'news') {
+                loadStockNews(currentStockSymbol);
+            } else if (tab === 'announcements') {
+                loadStockAnnouncements(currentStockSymbol);
+            }
+        }
+
+        function loadStockQuote(symbol) {
+            const container = document.getElementById('detail-quote');
+            container.innerHTML = '<div class="loading"><div class="spinner-border" role="status"></div></div>';
+
+            // 使用热门数据作为简化展示
+            fetch(API_BASE + '/stock/hot?limit=100')
+            .then(res => res.json())
+            .then(data => {
+                const stock = data.data ? data.data.find(s => s.item === symbol) : null;
+                if (stock) {
+                    container.innerHTML = `
+                        <p class="mb-1">数值: <strong>${stock.value}</strong></p>
+                        <hr>
+                        <button class="btn btn-primary btn-sm w-100" onclick="addWatchlistQuick('${symbol}')">
+                            <i class="bi bi-star"></i> 加入自选
+                        </button>
+                    `;
+                } else {
+                    container.innerHTML = '<p class="text-muted">暂无数据</p>';
+                }
+            })
+            .catch(err => {
+                container.innerHTML = '<p class="text-danger">加载失败</p>';
+            });
+        }
+
+        function loadStockNews(symbol) {
+            const container = document.getElementById('detail-content');
+            container.innerHTML = '<div class="loading"><div class="spinner-border" role="status"></div></div>';
+
+            // 简化版本，使用占位
+            setTimeout(() => {
+                container.innerHTML = `
+                    <div class="list-group">
+                        <div class="list-group-item">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1">${symbol} 相关新闻</h6>
+                                <small>暂无新闻数据</small>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }, 500);
+        }
+
+        function loadStockAnnouncements(symbol) {
+            const container = document.getElementById('detail-content');
+            container.innerHTML = '<div class="loading"><div class="spinner-border" role="status"></div></div>';
+
+            fetch(API_BASE + '/stock/' + symbol + '/announcements?limit=10')
+            .then(res => res.json())
+            .then(data => {
+                if (data.code === 200 && data.data && data.data.length > 0) {
+                    let html = '<div class="list-group">';
+                    data.data.forEach(item => {
+                        html += `<a href="${item.url || '#'}" class="list-group-item list-group-item-action" target="_blank">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1">${item.title || item.公告标题 || '无标题'}</h6>
+                                <small>${item.time || item.公告时间 || ''}</small>
+                            </div>
+                        </a>`;
+                    });
+                    html += '</div>';
+                    container.innerHTML = html;
+                } else {
+                    container.innerHTML = '<p class="text-muted">暂无公告</p>';
+                }
+            })
+            .catch(err => {
+                container.innerHTML = '<p class="text-danger">加载失败</p>';
+            });
+        }
+
+        function initKlineChart(symbol) {
+            const chartDom = document.getElementById('kline-chart');
+            if (klineChart) {
+                klineChart.dispose();
+            }
+            klineChart = echarts.init(chartDom);
+
+            // 简化K线图数据
+            const option = {
+                title: {
+                    text: symbol + ' 走势示意',
+                    left: 'center'
+                },
+                tooltip: {
+                    trigger: 'axis'
+                },
+                xAxis: {
+                    type: 'category',
+                    data: ['周一', '周二', '周三', '周四', '周五']
+                },
+                yAxis: {
+                    type: 'value'
+                },
+                series: [{
+                    data: [120, 132, 101, 134, 90],
+                    type: 'line',
+                    smooth: true,
+                    lineStyle: { color: '#1a73e8' },
+                    areaStyle: {
+                        color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                            { offset: 0, color: 'rgba(26, 115, 232, 0.3)' },
+                            { offset: 1, color: 'rgba(26, 115, 232, 0.05)' }
+                        ])
+                    }
+                }]
+            };
+            klineChart.setOption(option);
+        }
+
+        // ============ 自选股管理 ============
+        function loadWatchlist() {
+            const container = document.getElementById('watchlist-table');
+            container.innerHTML = '<div class="loading"><div class="spinner-border" role="status"></div></div>';
+
+            fetch(API_BASE + '/user/watchlist', {
+                headers: { 'X-User-Id': localStorage.getItem('user_id') }
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.code === 200) {
+                    renderWatchlistTable(data.data);
+                }
+            })
+            .catch(console.error);
+        }
+
+        function renderWatchlistTable(watchlist) {
+            const container = document.getElementById('watchlist-table');
+            if (!watchlist || watchlist.length === 0) {
+                container.innerHTML = '<p class="text-muted text-center">暂无自选股，点击上方按钮添加</p>';
+                return;
+            }
+
+            let html = '<div class="table-responsive"><table class="table stock-table">';
+            html += '<thead><tr><th>代码</th><th>名称</th><th>备注</th><th>预警价格</th><th>预警涨跌幅</th><th>操作</th></tr></thead><tbody>';
+
+            watchlist.forEach(item => {
+                html += `<tr>
+                    <td><a href="#" class="stock-code" onclick="showStockDetail('${item.symbol}'); return false;">${item.symbol}</a></td>
+                    <td>${item.stock_name || '--'}</td>
+                    <td>${item.notes || '--'}</td>
+                    <td>${item.alert_price || '--'}</td>
+                    <td>${item.alert_pct ? item.alert_pct + '%' : '--'}</td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-danger" onclick="deleteWatchlist('${item.symbol}')">
+                            <i class="bi bi-trash"></i> 删除
+                        </button>
+                    </td>
+                </tr>`;
+            });
+            html += '</tbody></table></div>';
+            container.innerHTML = html;
+        }
+
+        // 搜索股票（用于添加自选股）
+        let searchTimeout = null;
+        function searchStocksForAdd(keyword) {
+            const resultsDiv = document.getElementById('search-results');
+
+            if (!keyword || keyword.length < 1) {
+                resultsDiv.style.display = 'none';
+                resultsDiv.innerHTML = '';
+                return;
+            }
+
+            // 防抖
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                fetch(API_BASE + '/stock?q=' + encodeURIComponent(keyword) + '&limit=10')
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.code === 200 && data.data && data.data.length > 0) {
+                            let html = '';
+                            data.data.forEach(stock => {
+                                html += `<button type="button" class="list-group-item list-group-item-action"
+                                            onclick="selectStock('${stock.symbol}', '${stock.name}')">
+                                            <strong>${stock.symbol}</strong> - ${stock.name}
+                                        </button>`;
+                            });
+                            resultsDiv.innerHTML = html;
+                            resultsDiv.style.display = 'block';
+                        } else {
+                            resultsDiv.innerHTML = '<div class="list-group-item text-muted">未找到匹配的股票</div>';
+                            resultsDiv.style.display = 'block';
+                        }
+                    })
+                    .catch(err => {
+                        console.error(err);
+                    });
+            }, 300);
+        }
+
+        // 选择股票
+        function selectStock(symbol, name) {
+            document.getElementById('add-symbol').value = symbol;
+            document.getElementById('add-stock-name').value = name;
+            document.getElementById('search-results').style.display = 'none';
+            document.getElementById('search-results').innerHTML = '';
+        }
+
+        // 模态框关闭时清空搜索结果
+        document.getElementById('addWatchlistModal').addEventListener('hidden.bs.modal', function() {
+            document.getElementById('search-results').style.display = 'none';
+            document.getElementById('stock-search-input').value = '';
+            document.getElementById('add-symbol').value = '';
+            document.getElementById('add-stock-name').value = '';
+            document.getElementById('add-notes').value = '';
+            document.getElementById('add-alert-price').value = '';
+            document.getElementById('add-alert-pct').value = '';
+        });
+
+        function addWatchlistQuick(symbol) {
+            fetch(API_BASE + '/user/watchlist', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-User-Id': localStorage.getItem('user_id')
+                },
+                body: JSON.stringify({ symbol: symbol })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.code === 201) {
+                    showToast('已添加到自选股', 'success');
+                } else {
+                    showToast(data.message || '添加失败', 'danger');
+                }
+            })
+            .catch(err => showToast('添加失败', 'danger'));
+        }
+
+        function addToWatchlist() {
+            const symbol = document.getElementById('add-symbol').value;
+            const stock_name = document.getElementById('add-stock-name').value;
+            const notes = document.getElementById('add-notes').value;
+            const alert_price = document.getElementById('add-alert-price').value;
+            const alert_pct = document.getElementById('add-alert-pct').value;
+
+            if (!symbol) {
+                showToast('请输入股票代码', 'warning');
+                return;
+            }
+
+            fetch(API_BASE + '/user/watchlist', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-User-Id': localStorage.getItem('user_id')
+                },
+                body: JSON.stringify({
+                    symbol: symbol,
+                    stock_name: stock_name,
+                    notes: notes,
+                    alert_price: alert_price ? parseFloat(alert_price) : null,
+                    alert_pct: alert_pct ? parseFloat(alert_pct) : null
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.code === 201) {
+                    showToast('添加成功', 'success');
+                    bootstrap.Modal.getInstance(document.getElementById('addWatchlistModal')).hide();
+                    document.getElementById('add-watchlist-form').reset();
+                    loadWatchlist();
+                } else {
+                    showToast(data.message || '添加失败', 'danger');
+                }
+            })
+            .catch(err => showToast('添加失败', 'danger'));
+        }
+
+        function deleteWatchlist(symbol) {
+            if (!confirm('确定要删除该自选股吗？')) return;
+
+            fetch(API_BASE + '/user/watchlist/' + symbol, {
+                method: 'DELETE',
+                headers: { 'X-User-Id': localStorage.getItem('user_id') }
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.code === 200) {
+                    showToast('删除成功', 'success');
+                    loadWatchlist();
+                    if (currentPage === 'dashboard') loadDashboard();
+                }
+            })
+            .catch(err => showToast('删除失败', 'danger'));
+        }
+
+        // ============ 设置 ============
+        function loadPreference() {
+            fetch(API_BASE + '/user/preference', {
+                headers: { 'X-User-Id': localStorage.getItem('user_id') }
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.code === 200 && data.data) {
+                    const p = data.data;
+                    document.getElementById('push-enabled').checked = p.push_enabled !== false;
+                    document.getElementById('push-time').value = p.push_time || '09:30';
+
+                    // 解析推送日期
+                    const days = (p.push_days || '1,2,3,4,5').split(',');
+                    for (let i = 1; i <= 5; i++) {
+                        document.getElementById('day-' + i).checked = days.includes(String(i));
+                    }
+
+                    document.getElementById('price-alert').checked = p.price_alert !== false;
+                    document.getElementById('news-alert').checked = p.news_alert !== false;
+                    document.getElementById('announcement-alert').checked = p.announcement_alert !== false;
+                }
+            })
+            .catch(console.error);
+        }
+
+        document.getElementById('preference-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const push_enabled = document.getElementById('push-enabled').checked;
+            const push_time = document.getElementById('push-time').value;
+
+            let push_days = [];
+            for (let i = 1; i <= 5; i++) {
+                if (document.getElementById('day-' + i).checked) {
+                    push_days.push(i);
+                }
+            }
+
+            const price_alert = document.getElementById('price-alert').checked;
+            const news_alert = document.getElementById('news-alert').checked;
+            const announcement_alert = document.getElementById('announcement-alert').checked;
+
+            fetch(API_BASE + '/user/preference', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-User-Id': localStorage.getItem('user_id')
+                },
+                body: JSON.stringify({
+                    push_enabled: push_enabled,
+                    push_time: push_time,
+                    push_days: push_days.join(','),
+                    price_alert: price_alert,
+                    news_alert: news_alert,
+                    announcement_alert: announcement_alert
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.code === 200) {
+                    showToast('设置已保存', 'success');
+                } else {
+                    showToast(data.message || '保存失败', 'danger');
+                }
+            })
+            .catch(err => showToast('保存失败', 'danger'));
+        });
+
+        // ============ 智能体团队 ============
+        function loadAgentTeams() {
+            const container = document.getElementById('agent-teams-container');
+            container.innerHTML = '<div class="loading"><div class="spinner-border" role="status"></div></div>';
+
+            fetch(API_BASE + '/agent/team-details')
+            .then(res => res.json())
+            .then(data => {
+                if (data.code === 200) {
+                    renderAgentTeams(data.data);
+                } else {
+                    container.innerHTML = '<p class="text-danger">加载失败</p>';
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                container.innerHTML = '<p class="text-danger">加载失败</p>';
+            });
+        }
+
+        function renderAgentTeams(teams) {
+            const container = document.getElementById('agent-teams-container');
+            let html = '';
+
+            teams.forEach(team => {
+                html += `
+                <div class="col-md-6 col-lg-4 mb-4">
+                    <div class="card h-100 agent-team-card" style="cursor: pointer;" onclick="showTeamAgents('${team.id}')">
+                        <div class="card-header" style="background: ${team.color}; color: white;">
+                            <h5 class="mb-0"><i class="bi bi-people"></i> ${team.name}</h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="text-muted mb-2">${team.description}</p>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="badge bg-secondary">${team.agent_count} 个智能体</span>
+                                <small class="text-primary">点击查看详情 <i class="bi bi-arrow-right"></i></small>
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+            });
+
+            container.innerHTML = html;
+        }
+
+        function showTeamAgents(teamId) {
+            document.getElementById('team-select').value = teamId;
+            showPage('agent-list');
+            loadTeamAgents();
+        }
+
+        let currentEditingAgent = null;
+
+        function loadTeamAgents() {
+            const container = document.getElementById('agent-list-container');
+            const teamId = document.getElementById('team-select').value;
+
+            if (!teamId) {
+                container.innerHTML = '<p class="text-muted text-center">请选择一个团队查看智能体列表</p>';
+                return;
+            }
+
+            container.innerHTML = '<div class="loading"><div class="spinner-border" role="status"></div></div>';
+
+            fetch(API_BASE + '/agent/teams')
+            .then(res => res.json())
+            .then(data => {
+                if (data.code === 200 && data.data[teamId]) {
+                    const agents = data.data[teamId];
+                    renderAgentList(agents);
+                } else {
+                    container.innerHTML = '<p class="text-danger">加载失败</p>';
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                container.innerHTML = '<p class="text-danger">加载失败</p>';
+            });
+        }
+
+        function renderAgentList(agents) {
+            const container = document.getElementById('agent-list-container');
+
+            // 智能体元数据
+            const agentMeta = {
+                'macro_analyst': { title: '宏观分析师', desc: '分析利率走势、汇率变化、产业政策、宏观经济指标' },
+                'fundamental_analyst': { title: '基本面分析师', desc: '分析行业增长率、利润率、竞争格局' },
+                'technical_analyst': { title: '技术分析师', desc: '分析支撑位压力位、趋势判断、技术指标' },
+                'insider_analyst': { title: '内部信息分析师', desc: '追踪非公开信息、专家访谈、产业链动态' },
+                'research_analyst': { title: '研报分析师', desc: '汇总机构观点、目标价、评级分布' },
+                'geo_analyst': { title: '地缘政治分析师', desc: '分析国际贸易关系、制裁政策、汇率波动' },
+                'news_analyst': { title: '市场信息分析师', desc: '新闻情感分析、舆论热度、突发消息' },
+                'bull_analyst': { title: '多头研究员', desc: '寻找买入理由、分析上涨逻辑' },
+                'bear_analyst': { title: '空头研究员', desc: '寻找风险理由、分析下跌风险' },
+                'contrarian_analyst': { title: '核心矛盾研究员', desc: '提炼核心矛盾、判断主要矛盾变化' },
+                'industry_secretary': { title: '行业秘书', desc: '汇总分析师观点、生成行业判断报告' },
+                'portfolio_trader': { title: '配置交易员', desc: '仓位配置、调仓方案制定' },
+                'allocation_secretary': { title: '配置秘书', desc: '将调仓指令转化为易读建议书' },
+                'risk_scanner': { title: '风险扫描员', desc: '全市场风险扫描、风险事件监控' },
+                'portfolio_risk_analyst': { title: '组合风险分析师', desc: '分析集中度风险、相关性风险、流动性风险' },
+                'risk_secretary': { title: '风控秘书', desc: '给出最终风险评级、交易许可' },
+                'stock_screener': { title: '个股筛选器', desc: '量化选股、筛选条件设置' },
+                'financial_detective': { title: '财务侦探', desc: '审核财务数据、营收真实性、负债率' },
+                'valuation_expert': { title: '估值专家', desc: 'DCF估值、PE估值、PS估值' },
+                'alpha_researcher': { title: 'Alpha研究员', desc: '寻找超额收益来源、竞争优势、护城河' },
+                'stock_risk_analyst': { title: '个股风控师', desc: '检查违规记录、减持风险、ESG风险' },
+                'trade_executor': { title: '交易执行员', desc: '执行买卖指令、成交策略' },
+                'final_decider': { title: '最终决策者', desc: '综合所有分析给出投资决策' }
+            };
+
+            let html = '<div class="table-responsive"><table class="table table-hover">';
+            html += '<thead><tr><th>智能体</th><th>描述</th><th>操作</th></tr></thead><tbody>';
+
+            agents.forEach(agentName => {
+                const meta = agentMeta[agentName] || { title: agentName, desc: '' };
+                html += `<tr>
+                    <td><strong>${meta.title}</strong><br><small class="text-muted">${agentName}</small></td>
+                    <td>${meta.desc}</td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary" onclick="editAgentPrompt('${agentName}')">
+                            <i class="bi bi-pencil"></i> 编辑提示词
+                        </button>
+                    </td>
+                </tr>`;
+            });
+
+            html += '</tbody></table></div>';
+            container.innerHTML = html;
+        }
+
+        function editAgentPrompt(agentName) {
+            currentEditingAgent = agentName;
+
+            const container = document.getElementById('agent-prompt-title');
+            fetch(API_BASE + '/agent/prompt/' + agentName)
+            .then(res => res.json())
+            .then(data => {
+                if (data.code === 200) {
+                    document.getElementById('agent-prompt-title').textContent = data.data.agent_title + ' - 提示词';
+                    document.getElementById('agent-description').value = data.data.description;
+                    document.getElementById('agent-prompt-text').value = data.data.prompt;
+
+                    // 显示模态框
+                    const modal = new bootstrap.Modal(document.getElementById('agentPromptModal'));
+                    modal.show();
+                } else {
+                    showToast('加载提示词失败', 'danger');
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                showToast('加载提示词失败', 'danger');
+            });
+        }
+
+        function saveAgentPrompt() {
+            if (!currentEditingAgent) return;
+
+            const newPrompt = document.getElementById('agent-prompt-text').value;
+
+            fetch(API_BASE + '/agent/prompt/' + currentEditingAgent, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ prompt: newPrompt })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.code === 200) {
+                    showToast('提示词保存成功', 'success');
+                    bootstrap.Modal.getInstance(document.getElementById('agentPromptModal')).hide();
+                } else {
+                    showToast(data.message || '保存失败', 'danger');
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                showToast('保存失败', 'danger');
+            });
+        }
+
+        // ============ 工具函数 ============
+        function showToast(message, type = 'info') {
+            const container = document.querySelector('.toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast align-items-center text-white bg-${type} border-0`;
+            toast.setAttribute('role', 'alert');
+            toast.setAttribute('aria-live', 'assertive');
+            toast.setAttribute('aria-atomic', 'true');
+            toast.innerHTML = `
+                <div class="d-flex">
+                    <div class="toast-body">${message}</div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                </div>
+            `;
+            container.appendChild(toast);
+            const bsToast = new bootstrap.Toast(toast);
+            bsToast.show();
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        // ============ 初始化 ============
+        document.addEventListener('DOMContentLoaded', function() {
+            checkAuth();
+        });
+    </script>
+</body>
+</html>

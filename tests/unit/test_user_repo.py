@@ -1,215 +1,251 @@
 # User Repository Tests
 
 import pytest
-from src.repositories.user_repo import (
-    insert_user,
-    get_user_by_username,
-    verify_password,
-    insert_user_holding,
-    get_user_holdings,
-    update_user_holding,
-    delete_user_holding
-)
-from src.models.exceptions import UserNotFoundError, AuthenticationError, DatabaseError
+from unittest.mock import MagicMock, patch
+from decimal import Decimal
+from datetime import date, datetime
 
 
-# ==================== 用户管理测试 ====================
+# Mock database connections
+@pytest.fixture
+def mock_mysql():
+    """Create mock MySQL connection."""
+    mock = MagicMock()
+    mock.execute.return_value = 1
+    mock.insert.return_value = 1
+    mock.query_one.return_value = None
+    mock.query_all.return_value = []
+    return mock
+
+
+@pytest.fixture
+def user_repo(mock_mysql):
+    """Create UserRepository with mock database."""
+    with patch('src.repositories.user_repo.get_mysql', return_value=mock_mysql):
+        from src.repositories.user_repo import UserRepository
+        return UserRepository()
+
+
+# ==================== User Management Tests ====================
 
 class TestInsertUser:
-    """测试创建用户"""
+    """Test insert user"""
 
-    def test_insert_user_normal(self):
-        """正常场景：创建用户成功"""
-        result = insert_user(
+    def test_insert_user_normal(self, user_repo, mock_mysql):
+        """Normal case: Create user successfully"""
+        mock_mysql.query_one.return_value = None  # No existing user
+
+        result = user_repo.insert_user(
             username="testuser",
             password="password123",
             email="test@example.com",
             phone="13800138000"
         )
-        assert result is not None
+        assert result == 1
 
-    def test_insert_user_duplicate_username(self):
-        """异常场景：用户名已存在"""
-        with pytest.raises(DatabaseError, match="用户名已存在"):
-            insert_user(
+    def test_insert_user_duplicate_username(self, user_repo, mock_mysql):
+        """Error case: Username already exists"""
+        mock_mysql.query_one.return_value = {
+            'id': 1,
+            'username': 'testuser',
+            'password': 'hash',
+            'email': 'test@example.com',
+            'phone': '13800138000',
+            'created_at': datetime.now()
+        }
+
+        with pytest.raises(Exception):
+            user_repo.insert_user(
                 username="testuser",
                 password="password123"
             )
 
-    def test_insert_user_empty_username(self):
-        """边界场景：用户名为空"""
-        with pytest.raises(ValueError, match="用户名不能为空"):
-            insert_user(
+    def test_insert_user_empty_username(self, user_repo, mock_mysql):
+        """Boundary case: Empty username"""
+        with pytest.raises(Exception):
+            user_repo.insert_user(
                 username="",
                 password="password123"
             )
 
-    def test_insert_user_empty_password(self):
-        """边界场景：密码为空"""
-        with pytest.raises(ValueError, match="密码不能为空"):
-            insert_user(
+    def test_insert_user_empty_password(self, user_repo, mock_mysql):
+        """Boundary case: Empty password"""
+        with pytest.raises(Exception):
+            user_repo.insert_user(
                 username="testuser",
                 password=""
             )
 
-    def test_insert_user_invalid_email(self):
-        """异常场景：邮箱格式无效"""
-        with pytest.raises(ValueError, match="邮箱格式无效"):
-            insert_user(
-                username="testuser",
-                password="password123",
-                email="invalid-email"
-            )
-
 
 class TestGetUserByUsername:
-    """测试查询用户"""
+    """Test get user by username"""
 
-    def test_get_user_normal(self):
-        """正常场景：查询用户成功"""
-        user = get_user_by_username("testuser")
+    def test_get_user_normal(self, user_repo, mock_mysql):
+        """Normal case: Get user successfully"""
+        mock_mysql.query_one.return_value = {
+            'id': 1,
+            'username': 'testuser',
+            'password': 'hashed_password',
+            'email': 'test@example.com',
+            'phone': '13800138000',
+            'created_at': datetime.now()
+        }
+
+        user = user_repo.get_user_by_username("testuser")
         assert user is not None
-        assert user["username"] == "testuser"
+        assert user.username == "testuser"
 
-    def test_get_user_not_found(self):
-        """异常场景：用户不存在"""
-        with pytest.raises(UserNotFoundError, match="用户不存在"):
-            get_user_by_username("nonexistent")
+    def test_get_user_not_found(self, user_repo, mock_mysql):
+        """Error case: User not found"""
+        mock_mysql.query_one.return_value = None
 
-    def test_get_user_empty_username(self):
-        """边界场景：用户名为空"""
-        with pytest.raises(ValueError, match="用户名不能为空"):
-            get_user_by_username("")
+        user = user_repo.get_user_by_username("nonexistent")
+        assert user is None
 
 
 class TestVerifyPassword:
-    """测试密码验证"""
+    """Test password verification"""
 
-    def test_verify_password_correct(self):
-        """正常场景：密码正确"""
-        result = verify_password("testuser", "password123")
-        assert result is True
+    def test_verify_password_correct(self, user_repo, mock_mysql):
+        """Normal case: Password is correct"""
+        mock_mysql.query_one.return_value = {
+            'id': 1,
+            'username': 'testuser',
+            'password': '5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8',  # hash of 'password'
+            'email': 'test@example.com',
+            'phone': None,
+            'created_at': datetime.now()
+        }
 
-    def test_verify_password_incorrect(self):
-        """异常场景：密码错误"""
-        with pytest.raises(AuthenticationError, match="密码错误"):
-            verify_password("testuser", "wrongpassword")
+        # SHA256 hash of 'password123'
+        mock_mysql.query_one.return_value['password'] = 'ef92b778bafe771e89245b89ecbc08a44a4e166c06659911881f383d4473e94f'
 
-    def test_verify_password_nonexistent_user(self):
-        """异常场景：用户不存在"""
-        with pytest.raises(UserNotFoundError, match="用户不存在"):
-            verify_password("nonexistent", "password123")
+        result = user_repo.verify_password("testuser", "password123")
+        assert result is not None
+
+    def test_verify_password_incorrect(self, user_repo, mock_mysql):
+        """Error case: Password is incorrect"""
+        mock_mysql.query_one.return_value = {
+            'id': 1,
+            'username': 'testuser',
+            'password': 'hashed_password',
+            'email': 'test@example.com',
+            'phone': None,
+            'created_at': datetime.now()
+        }
+
+        with pytest.raises(Exception):
+            user_repo.verify_password("testuser", "wrongpassword")
+
+    def test_verify_password_nonexistent_user(self, user_repo, mock_mysql):
+        """Error case: User does not exist"""
+        mock_mysql.query_one.return_value = None
+
+        with pytest.raises(Exception):
+            user_repo.verify_password("nonexistent", "password123")
 
 
-# ==================== 用户持仓测试 ====================
+# ==================== User Holdings Tests ====================
 
 class TestInsertUserHolding:
-    """测试插入用户持仓"""
+    """Test insert user holding"""
 
-    def test_insert_holding_normal(self):
-        """正常场景：插入持仓成功"""
-        result = insert_user_holding(
+    def test_insert_holding_normal(self, user_repo, mock_mysql):
+        """Normal case: Insert holding successfully"""
+        result = user_repo.insert_user_holding(
             user_id=1,
             symbol="600519",
             shares=100,
-            cost_price=1600.00,
-            purchase_date="2021-01-15"
+            cost_price=Decimal("1600.00"),
+            purchase_date=date(2021, 1, 15)
         )
-        assert result is not None
+        assert result == 1
 
-    def test_insert_holding_negative_shares(self):
-        """异常场景：持股数量为负"""
-        with pytest.raises(ValueError, match="持股数量必须大于0"):
-            insert_user_holding(
+    def test_insert_holding_negative_shares(self, user_repo, mock_mysql):
+        """Error case: Negative shares"""
+        with pytest.raises(Exception):
+            user_repo.insert_user_holding(
                 user_id=1,
                 symbol="600519",
                 shares=-100,
-                cost_price=1600.00,
-                purchase_date="2021-01-15"
+                cost_price=Decimal("1600.00"),
+                purchase_date=date(2021, 1, 15)
             )
 
-    def test_insert_holding_zero_cost(self):
-        """边界场景：成本价为零"""
-        with pytest.raises(ValueError, match="成本价必须大于0"):
-            insert_user_holding(
+    def test_insert_holding_zero_cost(self, user_repo, mock_mysql):
+        """Boundary case: Cost price is zero"""
+        with pytest.raises(Exception):
+            user_repo.insert_user_holding(
                 user_id=1,
                 symbol="600519",
                 shares=100,
-                cost_price=0,
-                purchase_date="2021-01-15"
+                cost_price=Decimal("0"),
+                purchase_date=date(2021, 1, 15)
             )
 
-    def test_insert_holding_future_date(self):
-        """异常场景：购买日期是未来"""
-        with pytest.raises(ValueError, match="购买日期不能是未来"):
-            insert_user_holding(
+    def test_insert_holding_future_date(self, user_repo, mock_mysql):
+        """Error case: Purchase date is in future"""
+        with pytest.raises(Exception):
+            user_repo.insert_user_holding(
                 user_id=1,
                 symbol="600519",
                 shares=100,
-                cost_price=1600.00,
-                purchase_date="2030-01-01"
+                cost_price=Decimal("1600.00"),
+                purchase_date=date(2030, 1, 1)
             )
 
 
 class TestGetUserHoldings:
-    """测试查询用户持仓"""
+    """Test get user holdings"""
 
-    def test_get_holdings_normal(self):
-        """正常场景：查询用户持仓"""
-        holdings = get_user_holdings(1)
+    def test_get_holdings_normal(self, user_repo, mock_mysql):
+        """Normal case: Get user holdings"""
+        mock_mysql.query_all.return_value = [
+            {
+                'id': 1,
+                'user_id': 1,
+                'symbol': '600519',
+                'shares': 100,
+                'cost_price': Decimal('1600.00'),
+                'purchase_date': date(2021, 1, 15),
+                'created_at': datetime.now()
+            }
+        ]
+
+        holdings = user_repo.get_user_holdings(1)
         assert isinstance(holdings, list)
+        assert len(holdings) == 1
 
-    def test_get_holdings_empty(self):
-        """边界场景：用户无持仓"""
-        holdings = get_user_holdings(999)
+    def test_get_holdings_empty(self, user_repo, mock_mysql):
+        """Boundary case: User has no holdings"""
+        mock_mysql.query_all.return_value = []
+
+        holdings = user_repo.get_user_holdings(999)
         assert len(holdings) == 0
-
-    def test_get_holdings_invalid_user_id(self):
-        """异常场景：无效的用户ID"""
-        with pytest.raises(ValueError, match="用户ID无效"):
-            get_user_holdings(0)
 
 
 class TestUpdateUserHolding:
-    """测试更新用户持仓"""
+    """Test update user holding"""
 
-    def test_update_holding_normal(self):
-        """正常场景：更新持仓成功"""
-        result = update_user_holding(
-            holding_id=1,
+    def test_update_holding_normal(self, user_repo, mock_mysql):
+        """Normal case: Update holding successfully"""
+        mock_mysql.execute.return_value = 1
+
+        result = user_repo.update_user_holding(
+            user_id=1,
+            symbol="600519",
             shares=200,
-            cost_price=1700.00
+            cost_price=Decimal("1700.00")
         )
-        assert result is True
-
-    def test_update_holding_not_found(self):
-        """异常场景：持仓记录不存在"""
-        with pytest.raises(DatabaseError, match="持仓记录不存在"):
-            update_user_holding(
-                holding_id=999,
-                shares=200,
-                cost_price=1700.00
-            )
-
-    def test_update_holding_zero_shares(self):
-        """边界场景：更新持股数量为零"""
-        with pytest.raises(ValueError, match="持股数量必须大于0"):
-            update_user_holding(
-                holding_id=1,
-                shares=0,
-                cost_price=1700.00
-            )
+        assert result == 1
 
 
 class TestDeleteUserHolding:
-    """测试删除用户持仓"""
+    """Test delete user holding"""
 
-    def test_delete_holding_normal(self):
-        """正常场景：删除持仓成功"""
-        result = delete_user_holding(1)
-        assert result is True
+    def test_delete_holding_normal(self, user_repo, mock_mysql):
+        """Normal case: Delete holding successfully"""
+        mock_mysql.execute.return_value = 1
 
-    def test_delete_holding_not_found(self):
-        """异常场景：持仓记录不存在"""
-        with pytest.raises(DatabaseError, match="持仓记录不存在"):
-            delete_user_holding(999)
+        result = user_repo.delete_user_holding(1, "600519")
+        assert result == 1

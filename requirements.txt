@@ -7,8 +7,7 @@ sqlalchemy==2.0.25
 
 # Web Framework
 flask==3.0.0
-fastapi==0.108.0
-uvicorn==0.25.0
+werkzeug==3.0.1
 
 # Testing
 pytest==7.4.4
@@ -19,7 +18,13 @@ faker==22.0.0
 # Utils
 python-dotenv==1.0.0
 cryptography==41.0.7
+apscheduler==3.10.4
+requests==2.31.0
+beautifulsoup4==4.12.3
+lxml
 
 # Data
 pandas==2.2.0
 numpy==1.26.3
+akshare
+tushare
